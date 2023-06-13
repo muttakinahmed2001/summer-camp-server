@@ -143,16 +143,23 @@ async function run() {
     })
 
     // class api 
+    app.get('/classes', verifyJWT,  async (req, res) => {
+      const result = await classCollection.find().toArray();
+
+      res.send(result);
+    })
     app.post('/classes', async (req, res) => {
       const languageClass = req.body;
       languageClass.status = 'pending';
       const result = await classCollection.insertOne(languageClass);
- 
+
 
       res.send(result);
 
 
     })
+
+
 
 
     // Send a ping to confirm a successful connection
