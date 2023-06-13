@@ -159,6 +159,18 @@ async function run() {
 
     })
 
+    app.patch('/classes/approve/:id', async (req,res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const updateDoc = {
+        $set: {
+          status: 'approve'
+        },
+      };
+      const result = await movies.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+
 
 
 
