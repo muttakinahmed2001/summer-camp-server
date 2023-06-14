@@ -155,6 +155,18 @@ async function run() {
       const result = await classCollection.findOne(query);
       res.send(result);
     })
+
+    
+
+    app.get('/classesByEmail', async(req,res) => {
+       let query = {};
+       if(req.query?.email){
+        query ={instructorEmail: req.query.email}
+
+       }
+       const result = await classCollection.find(query).toArray();
+       res.send(result);
+    })
     app.post('/classes', async (req, res) => {
       const languageClass = req.body;
       languageClass.status = 'Pending';
