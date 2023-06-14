@@ -45,7 +45,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    
 
     const usersCollection = client.db("summerCampDb").collection("users")
     const classCollection = client.db("summerCampDb").collection("classes")
@@ -143,14 +143,21 @@ async function run() {
     })
 
     // class api 
-    app.get('/classes', verifyJWT,  async (req, res) => {
+    app.get('/classes', verifyJWT, async (req, res) => {
       const result = await classCollection.find().toArray();
 
       res.send(result);
     })
+
+    app.get('/classes/:id', async(req,res) => {
+      const id = req.params.id;
+      const query ={_id: new ObjectId(id)}
+      const result = await classCollection.findOne(query);
+      res.send(result);
+    })
     app.post('/classes', async (req, res) => {
       const languageClass = req.body;
-      languageClass.status = 'pending';
+      languageClass.status = 'Pending';
       const result = await classCollection.insertOne(languageClass);
 
 
@@ -159,28 +166,58 @@ async function run() {
 
     })
 
-    app.patch('/classes/approve/:id', async (req,res) => {
+    app.patch(`/classes/approve/:id`, async (req, res) => {
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)}
+      const filter = { _id: new ObjectId(id) }
       const updateDoc = {
         $set: {
-          status: 'approve'
+          status: 'Approved'
         },
       };
-      const result = await movies.updateOne(filter, updateDoc);
+      const result = await classCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
 
+    app.patch(`/classes/deny/:id`, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const updateDoc = {
+        $set: {
+          status: 'Denied'
+        }
+      }
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+
+     app.patch(`/classes/feedback/:id`, async(req,res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+       const feedback = {
+        $set: {
+          ...req.body
+        }
+       }
+
+       const result = await classCollection.updateOne(filter,feedback);
+       res.send(result);
+
+     })
+    
+
+     
 
 
 
-    // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
-  }
+
+
+  // Send a ping to confirm a successful connection
+  // await client.db("admin").command({ ping: 1 });
+  console.log("Pinged your deployment. You successfully connected to MongoDB!");
+} finally {
+  // Ensures that the client will close when you finish/error
+  // await client.close();
+}
 }
 run().catch(console.dir);
 
