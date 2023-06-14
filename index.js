@@ -49,6 +49,7 @@ async function run() {
 
     const usersCollection = client.db("summerCampDb").collection("users")
     const classCollection = client.db("summerCampDb").collection("classes")
+    const selectedClassCollection = client.db("summerCampDb").collection("selectedClasses")
 
     app.post('/jwt', (req, res) => {
       const user = req.body;
@@ -67,6 +68,8 @@ async function run() {
       }
       next();
     }
+
+    
 
     // users related apis
 
@@ -87,6 +90,8 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     })
+
+    // admin api
 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
@@ -167,6 +172,16 @@ async function run() {
        const result = await classCollection.find(query).toArray();
        res.send(result);
     })
+
+    app.get('/classesByStatus', async(req,res) => {
+      let query = {};
+      if(req.query?.status){
+        query ={status: req.query.status}
+
+      }
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    })
     app.post('/classes', async (req, res) => {
       const languageClass = req.body;
       languageClass.status = 'Pending';
@@ -216,7 +231,15 @@ async function run() {
 
      })
     
+// selected class api
 
+app.post('/selectedClasses', async(req,res) =>{
+  const selectedClass = req.body;
+  console.log(selectedClass);
+
+  const result = await selectedClassCollection.insertOne(selectedClass);
+  res.send(result);
+})
      
 
 
