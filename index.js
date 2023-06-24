@@ -339,6 +339,21 @@ async function run() {
   res.send(result);
  })
 
+ app.get('/totalEnrolledStudents', async (req, res) => {
+  const { instructorName } = req.query;
+
+  try {
+     
+    const filter = { instructorName: instructorName };
+    const totalEnrolledStudents = await enrolledCollection.countDocuments(filter);
+
+    res.send({ totalEnrolledStudents });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 
 
