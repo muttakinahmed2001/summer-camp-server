@@ -3,7 +3,7 @@ const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
-const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+ const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 
@@ -51,7 +51,9 @@ async function run() {
     const usersCollection = client.db("summerCampDb").collection("users")
     const classCollection = client.db("summerCampDb").collection("classes")
     const selectedClassCollection = client.db("summerCampDb").collection("selectedClasses")
-
+    const paymentCollection = client.db("summerCampDb").collection("payments")
+    const enrolledCollection = client.db("summerCampDb").collection("enrolled")
+    
     app.post('/jwt', (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -282,35 +284,60 @@ async function run() {
       res.send(result);
     })
 
-    payment
-
+   
  // payment
 
-app.post('/create-payment-intent', verifyJWT, async (req, res) => {
-  const { total, AvailableSeat, _id } = req.body;
-
-  const amount = total * 100;
+ app.post('/create-payment-intent',async(req,res) => {
+  const {price,AvailableSeat} = req.body;
+  const amount = price*100;
   const paymentIntent = await stripe.paymentIntents.create({
     amount: amount,
     currency: 'usd',
-    payment_method_types: ['card']
+    payment_method_types:['card']
   });
-
-  if (paymentIntent.status === 'succeeded') {
-    const filter = { _id: new ObjectId(_id) };
-    const update = { $inc: { AvailableSeat: -1 } };
-    await classCollection.updateOne(filter, update);
-
-    const selectedClassFilter = { classId: ObjectId(_id) };
-    await selectedClassCollection.deleteOne(selectedClassFilter);
-  }
-
   res.send({
     clientSecret: paymentIntent.client_secret
-  });
+  })
+ })
+
+ app.post('/paymentClasses', async (req, res) => {
+  const { enrolledClasses, transactionId } = req.body;
+  console.log(enrolledClasses);
+  console.log(transactionId);
+
+  const { ClassName } = enrolledClasses;
+
+  try {
+     
+    const filter = { ClassName: ClassName };
+    const updateDoc = {
+      $inc: {
+        AvailableSeat: -1
+      }
+    };
+    await classCollection.updateOne(filter, updateDoc);
+
+  
+    const selectedClassFilter = { ClassName: ClassName };
+    await selectedClassCollection.deleteOne(selectedClassFilter);
+
+    const paymentHistory = await paymentCollection.insertOne(transactionId);
+    const enrolledClass = await enrolledCollection.insertOne(enrolledClasses);
+    res.send({ paymentHistory, enrolledClass });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
+ app.get('/enrolledClassesByEmail', async(req,res) => {
+  let query = {};
+  if(req.query?.email){
+    query = {email: req.query.email}
+  }
 
+  const result = await enrolledCollection.find(query).toArray();
+  res.send(result);
+ })
 
 
 
